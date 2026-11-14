@@ -82,6 +82,11 @@ KateSessionManager::KateSessionManager(QObject *parent, const QString &sessionsD
     };
     auto dm = KateApp::self()->documentManager();
     connect(dm, &KateDocManager::documentCreated, &m_sessionSaveTimer, startTimer);
+    // edits must trigger the auto save too, else the stash of unsaved documents
+    // (e.g. new "Untitled" ones) is only written on open/close and lost on a crash
+    connect(dm, &KateDocManager::documentCreated, this, [this, startTimer](KTextEditor::Document *doc) {
+        connect(doc, &KTextEditor::Document::textChanged, this, startTimer);
+    });
     connect(dm, &KateDocManager::documentDeleted, &m_sessionSaveTimer, startTimer);
     m_sessionSaveTimer.callOnTimeout(this, [this] {
         if (m_sessionSaveTimerBlocked == 0) {

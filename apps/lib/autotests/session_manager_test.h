@@ -27,6 +27,7 @@ private Q_SLOTS:
     void deleteSessionRemovesStash();
     void renameSessionMovesStash();
     void copySessionCopiesStash();
+    void editingUntitledDocumentUpdatesStash();
     void renameSessionOntoExistingNameKeepsBothSessions();
     void saveAsAddsActiveSessionToList();
 
