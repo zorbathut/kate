@@ -23,6 +23,7 @@ private Q_SLOTS:
     void anonymousSessionFile();
     void urlizeSessionFile();
     void renameSession();
+    void editingUntitledDocumentUpdatesStash();
 
 private:
     class QTemporaryDir *m_tempdir;

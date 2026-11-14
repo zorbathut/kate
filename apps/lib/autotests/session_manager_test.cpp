@@ -6,12 +6,16 @@
 
 #include "session_manager_test.h"
 #include "kateapp.h"
+#include "katedocmanager.h"
 #include "katesessionmanager.h"
+
+#include <KTextEditor/Document>
 
 #include <KConfig>
 #include <KLocalizedString>
 
 #include <QCommandLineParser>
+#include <QScopeGuard>
 #include <QTemporaryDir>
 #include <QtTestWidgets>
 
@@ -117,3 +121,39 @@ void KateSessionManagerTest::renameSession()
 }
 
 #include "moc_session_manager_test.cpp"
+
+// The auto save must also run after edits, else the stash of an untitled document
+// keeps the content of the last open/close and later edits are lost on a crash.
+void KateSessionManagerTest::editingUntitledDocumentUpdatesStash()
+{
+    m_manager->activateSession(QStringLiteral("stashOnEdit"), false, false);
+    KateSession::Ptr s = m_manager->activeSession();
+    auto cleanup = qScopeGuard([this, s] {
+        m_manager->activateAnonymousSession();
+        m_manager->deleteSession(s);
+    });
+
+    KTextEditor::Document *doc = m_app->documentManager()->createDoc();
+    QVERIFY(doc->url().isEmpty());
+
+    const auto stashedContent = [s]() -> QByteArray {
+        s->config()->reparseConfiguration();
+        const auto groups = s->config()->groupList();
+        for (const QString &group : groups) {
+            const QString file = KConfigGroup(s->config(), group).readEntry("stashedFile");
+            QFile f(file);
+            if (!file.isEmpty() && f.open(QIODevice::ReadOnly)) {
+                return f.readAll().trimmed();
+            }
+        }
+        return {};
+    };
+
+    // let the auto save from creating the document pass, then edit without opening/closing anything
+    QTest::qWait(6000);
+    doc->setText(QStringLiteral("first edit"));
+    QTRY_COMPARE_WITH_TIMEOUT(stashedContent(), QByteArray("first edit"), 10000);
+
+    doc->setText(QStringLiteral("second edit"));
+    QTRY_COMPARE_WITH_TIMEOUT(stashedContent(), QByteArray("second edit"), 10000);
+}
