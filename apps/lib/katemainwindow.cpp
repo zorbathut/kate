@@ -872,6 +872,9 @@ bool KateMainWindow::queryClose()
         // We are ready to quit, ignore signals now, BUG: 508494
         KateApp::setIgnoreSignals();
 
+        // the user went through the close prompts, no need to recover anything
+        KateApp::self()->crashRecovery()->setCleanExit();
+
         qCDebug(LOG_KATE, "%s save active session", __func__);
         KateApp::self()->sessionManager()->saveActiveSession(true);
         return true;

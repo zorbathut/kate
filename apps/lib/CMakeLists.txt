@@ -160,6 +160,7 @@ target_sources(
 
     kateoutputview.cpp
     katestashmanager.cpp
+    katecrashrecovery.cpp
     diagnostics/diagnosticview.cpp
     diagnostics/diagnosticview.qrc
     texthint/KateTextHintManager.cpp
