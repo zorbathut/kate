@@ -330,6 +330,9 @@ KateApp::~KateApp()
     // we want no auto saving during application closing, we handle that explicitly
     KateSessionManager::AutoSaveBlocker blocker(sessionManager());
 
+    // stop crash recovery before documents get closed, keep its data unless the user went through the close prompts
+    m_crashRecovery.stop(m_crashRecovery.isCleanExit());
+
 #ifdef WITH_DBUS
     /**
      * unregister from dbus before we get unusable...
@@ -498,6 +501,15 @@ bool KateApp::init()
         sessionManager()->saveActiveSession(true, /*isAutoSave=*/true);
     });
 
+    // crash recovery of all open documents: track ours, then offer what died with other instances
+    // delayed, the main window shall be visible before we ask
+    if (!KateCrashRecovery::isDisabled()) {
+        m_crashRecovery.start();
+        QTimer::singleShot(500, this, [this] {
+            m_crashRecovery.offerRecovery();
+        });
+    }
+
     return true;
 }
 
@@ -631,6 +643,11 @@ void KateApp::shutdownKate(KateMainWindow *win)
 
     //  we are ready to quit, ignore any unix signals now to avoid incorrect session save. BUG: 508494
     setIgnoreSignals();
+
+    // the user went through the close prompts, no need to recover anything
+    if (win) {
+        m_crashRecovery.setCleanExit();
+    }
 
     qCDebug(LOG_KATE, "KateApp::%s save session", __func__);
     sessionManager()->saveActiveSession(true);

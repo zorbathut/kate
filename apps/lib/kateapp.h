@@ -9,6 +9,7 @@
 
 #include <ktexteditor/application.h>
 
+#include "katecrashrecovery.h"
 #include "katedocmanager.h"
 #include "katepluginmanager.h"
 #include "kateprivate_export.h"
@@ -198,6 +199,14 @@ public:
      *
      */
     KateStashManager *stashManager();
+
+    /**
+     * crash recovery of all open documents, see KateCrashRecovery
+     */
+    KateCrashRecovery *crashRecovery()
+    {
+        return &m_crashRecovery;
+    }
 
     /**
      * window management
@@ -509,6 +518,11 @@ private:
     KateSessionManager m_sessionManager;
 
     KateStashManager m_stashManager;
+
+    /**
+     * crash recovery, stopped first in the destructor
+     */
+    KateCrashRecovery m_crashRecovery;
 
 #ifdef WITH_KUSERFEEDBACK
     /**
